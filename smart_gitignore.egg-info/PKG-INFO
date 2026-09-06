@@ -1,0 +1,149 @@
+Metadata-Version: 2.4
+Name: smart-gitignore
+Version: 0.1.0
+Summary: Scan a project and auto-generate sensible .gitignore rules for logs, env files, venvs, node_modules and more.
+Author: Your Name
+License: MIT
+Project-URL: Homepage, https://github.com/YOUR_USERNAME/smart-gitignore
+Keywords: git,gitignore,cli,developer-tools
+Classifier: Environment :: Console
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Programming Language :: Python :: 3
+Classifier: Topic :: Software Development :: Version Control :: Git
+Requires-Python: >=3.7
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Provides-Extra: dev
+Requires-Dist: pytest>=7.0; extra == "dev"
+Dynamic: license-file
+
+# smart-gitignore
+
+Scan a project directory and auto-generate sensible `.gitignore` rules —
+logs, `.env` files, virtual environments, `node_modules`, caches, build
+artifacts, and OS junk — in a single command.
+
+Built for a very common beginner mistake: forgetting to add `.gitignore`
+*before* the first commit, then accidentally pushing log files, secrets,
+or dependency folders into the repo.
+
+## Why
+
+Most `.gitignore` generators (gitignore.io, `gig`, etc.) ask you to pick a
+language/framework and give you a template. `smart-gitignore` instead
+**looks at what's actually sitting in your project folder** and suggests
+rules based on real files it finds — logs, envs, venvs, dependency
+folders — regardless of language.
+
+It also does something most generators don't: it checks whether any of
+those files are **already tracked by git**, and warns you that adding a
+`.gitignore` rule alone won't remove them from the repo or its history.
+
+## Install
+
+```bash
+pip install smart-gitignore
+```
+
+(Or, until published: clone this repo and run `pip install .`)
+
+## Usage
+
+```bash
+# Preview what would be added, without touching any files
+smart-gitignore /path/to/project --dry-run
+
+# Scan current directory and write changes (with confirmation prompt)
+smart-gitignore
+
+# Skip the confirmation prompt for .gitignore writes
+smart-gitignore --yes
+
+# Also run git rm --cached automatically on already-tracked matches
+# (still separate from --yes; off by default)
+smart-gitignore --auto-untrack
+
+# Also detect and ignore images/video/audio (off by default —
+# many projects intentionally commit media assets)
+smart-gitignore --include-media
+```
+
+### Example output
+
+```
+Scanning /home/you/my-project ...
+
+Detected files that should probably be ignored:
+
+  [Logs]
+    *.log
+    logs/
+  [Environment / Secrets]
+    .env
+  [Python Virtual Environments]
+    venv/
+
+⚠ WARNING: these files are already tracked by git.
+  Adding a pattern to .gitignore will NOT remove them from the repo
+  or from your git history. The fix is to untrack them:
+
+    git rm --cached "app.log"    # matched pattern: *.log
+
+Append these rules to .gitignore? [y/N] y
+Done. Updated .gitignore
+
+Run 'git rm --cached' on the 1 already-tracked file(s) shown above now? [y/N] y
+
+Untracked 1 file(s):
+    git rm --cached "app.log"  done
+
+  These files still exist on disk — only removed from git's index.
+  Commit this to finish: git commit -m "Stop tracking ignored files"
+```
+
+Writing `.gitignore` and untracking already-committed files are **two
+separate confirmations** — saying yes to one never silently triggers the
+other. Pass `--auto-untrack` to skip the second prompt if you're scripting
+this (e.g. in CI or a setup script).
+
+## What it detects by default
+
+| Category | Examples |
+|---|---|
+| Logs | `*.log`, `logs/` |
+| Environment / secrets | `.env`, `.env.local` |
+| Python virtual environments | `venv/`, `.venv/`, `env/` |
+| Python cache | `__pycache__/`, `*.pyc` |
+| Node dependencies | `node_modules/` |
+| Build artifacts | `dist/`, `build/`, `target/` |
+| OS junk | `.DS_Store`, `Thumbs.db` |
+| Editor/IDE | `.vscode/`, `.idea/` |
+
+Images, video, and audio are **opt-in only** (`--include-media`) since
+many repos legitimately track media assets (docs, icons, website content).
+
+## Important: this doesn't rewrite git history
+
+`smart-gitignore` only edits `.gitignore`. If a file is already committed,
+ignoring it going forward requires:
+
+```bash
+git rm --cached path/to/file
+git commit -m "Stop tracking file"
+```
+
+If sensitive data (API keys, passwords) was ever committed, `git rm --cached`
+is **not enough** — it's still in old commits. Use
+[`git filter-repo`](https://github.com/newren/git-filter-repo) or the
+[BFG Repo-Cleaner](https://rtyley.github.io/bfg-repo-cleaner/) to scrub history,
+and rotate/revoke the leaked credentials regardless.
+
+## Contributing
+
+PRs welcome — especially additional rule categories in `rules.py`
+(other language ecosystems, other build tools, etc.).
+
+## License
+
+MIT
