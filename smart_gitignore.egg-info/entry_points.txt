@@ -1,2 +1,0 @@
-[console_scripts]
-smart-gitignore = smart_gitignore.cli:main
